@@ -33,11 +33,11 @@
 #if defined(UWP_HOLO)
 #include <d3d11_4.h>
 extern "C" ID3D11Texture2D* HoloLens_GetBackbuffer();
-#endif
+#endif // UWP_HOLO
 
 #if defined(UWP)
 extern "C" HRESULT SDL_UWP_CreateWinrtSwapChain(int width, int height, int multiSample, ID3D11Device** device, IDXGISwapChain** sc, ID3D11DeviceContext** dc);
-#endif
+#endif // UWP
 
 namespace Urho3D
 {
@@ -83,7 +83,9 @@ private:
     IDXGISwapChain* swapChain_;
     /// Default (backbuffer) rendertarget view.
     ID3D11RenderTargetView* defaultRenderTargetView_;
+#if defined(UWP_HOLO) && !defined(UWP_SINGLE_PASS_INSTANCED)
     ID3D11RenderTargetView* defaultStereoRenderTargetView_;
+#endif // UWP_HOLO && !UWP_SINGLE_PASS_INSTANCED
     /// Default depth-stencil texture.
     ID3D11Texture2D* defaultDepthTexture_;
     /// Default depth-stencil view.
