@@ -52,6 +52,9 @@ extern URHO3D_API const StringHash VSP_MODEL("Model");
 extern URHO3D_API const StringHash VSP_VIEW("View");
 extern URHO3D_API const StringHash VSP_VIEWINV("ViewInv");
 extern URHO3D_API const StringHash VSP_VIEWPROJ("ViewProj");
+#if UWP_SINGLE_PASS_INSTANCED
+extern URHO3D_API const StringHash VSP_VIEWPROJ2("ViewProj2");
+#endif // UWP_SINGLE_PASS_INSTANCED
 extern URHO3D_API const StringHash VSP_UOFFSET("UOffset");
 extern URHO3D_API const StringHash VSP_VOFFSET("VOffset");
 extern URHO3D_API const StringHash VSP_ZONE("Zone");

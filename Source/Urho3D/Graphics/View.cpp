@@ -773,6 +773,32 @@ void View::SetCameraShaderParameters(Camera* camera)
 
     graphics_->SetShaderParameter(VSP_VIEWPROJ, projection * camera->GetView());
 
+#if UWP_HOLO && UWP_SINGLE_PASS_INSTANCED
+	Matrix4 temp = camera->GetRightProjection();
+	float nearClip2 = temp.m32_ / temp.m22_; //0.1
+	float farClip2 = temp.m32_ / (temp.m22_ + 1); //20
+	float fovVertical = 360 * atanf(1 / temp.m11_) / M_PI; //17.1
+	float aspect = temp.m11_ / temp.m00_; //1.76
+	float skew = temp.m10_;
+	Vector2 projectionOffset = Vector2(-temp.m20_ / 2.0f, -temp.m21_ / 2.0f);
+
+	Matrix4 rightProjection = Matrix4::ZERO;
+	float h = (1.0f / tanf(fovVertical * M_DEGTORAD * 0.5f)) * camera->GetZoom();
+	float w = h / aspect;
+	float q = farClip2 / (farClip2 - nearClip2);
+	float r = -q * nearClip2;
+	rightProjection.m00_ = w;
+	rightProjection.m01_ = skew;
+	rightProjection.m02_ = projectionOffset.x_ * 2.0f;
+	rightProjection.m11_ = h;
+	rightProjection.m12_ = projectionOffset.y_ * 2.0f;
+	rightProjection.m22_ = q;
+	rightProjection.m23_ = r;
+	rightProjection.m32_ = 1.0f;
+
+	graphics_->SetShaderParameter(VSP_VIEWPROJ2, rightProjection * camera->GetRightView());
+#endif // UWP_SINGLE_PASS_INSTANCED
+
     // If in a scene pass and the command defines shader parameters, set them now
     if (passCommand_)
         SetCommandShaderParameters(*passCommand_);

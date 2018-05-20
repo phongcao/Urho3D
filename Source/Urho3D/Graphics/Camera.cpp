@@ -219,17 +219,17 @@ void Camera::SetAutoAspectRatio(bool enable)
 
 void Camera::SetProjectionOffset(const Vector2& offset)
 {
-    projectionOffset_ = offset;
-    projectionDirty_ = true;
-    MarkNetworkUpdate();
+	projectionOffset_ = offset;
+	projectionDirty_ = true;
+	MarkNetworkUpdate();
 }
 
 void Camera::SetUseReflection(bool enable)
 {
-    useReflection_ = enable;
-    viewDirty_ = true;
-    frustumDirty_ = true;
-    MarkNetworkUpdate();
+	useReflection_ = enable;
+	viewDirty_ = true;
+	frustumDirty_ = true;
+	MarkNetworkUpdate();
 }
 
 void Camera::SetReflectionPlane(const Plane& plane)
@@ -275,6 +275,20 @@ void Camera::SetProjection(const Matrix4& projection)
     // Called due to autoAspectRatio changing state, the projection itself is not serialized
     MarkNetworkUpdate();
 }
+
+#if UWP_SINGLE_PASS_INSTANCED
+
+void Camera::SetRightCameraNode(Node* rightCameraNode)
+{
+	rightCameraNode_ = rightCameraNode;
+}
+
+void Camera::SetRightProjection(const Matrix4& rightProjection)
+{
+	rightProjection_ = rightProjection;
+}
+
+#endif // UWP_SINGLE_PASS_INSTANCED
 
 float Camera::GetNearClip() const
 {
@@ -456,6 +470,15 @@ Matrix4 Camera::GetProjection() const
     return flipVertical_ ? flipMatrix * projection_ : projection_;
 }
 
+#if UWP_SINGLE_PASS_INSTANCED
+
+Matrix4 Camera::GetRightProjection() const
+{
+	return flipVertical_ ? flipMatrix * rightProjection_ : rightProjection_;
+}
+
+#endif // UWP_SINGLE_PASS_INSTANCED
+
 Matrix4 Camera::GetGPUProjection() const
 {
 #ifndef URHO3D_OPENGL
@@ -604,6 +627,27 @@ const Matrix3x4& Camera::GetView() const
 
     return view_;
 }
+
+#if UWP_SINGLE_PASS_INSTANCED
+
+const Matrix3x4& Camera::GetRightView() const
+{
+	Matrix3x4 worldTransform = rightCameraNode_ 
+		? Matrix3x4(
+			rightCameraNode_->GetWorldPosition(),
+			rightCameraNode_->GetWorldRotation(), 1.0f)
+		: Matrix3x4::IDENTITY;
+
+	Matrix3x4 reflectionMatrix = useReflection_ 
+		? reflectionMatrix_ * worldTransform 
+		: worldTransform;
+
+	rightView_ = reflectionMatrix.Inverse();
+
+	return rightView_;
+}
+
+#endif // UWP_SINGLE_PASS_INSTANCED
 
 void Camera::SetAspectRatioInternal(float aspectRatio)
 {

@@ -48,7 +48,12 @@ const char* ShaderVariation::elementSemanticNames[] =
     "COLOR",
     "BLENDWEIGHT",
     "BLENDINDICES",
-    "OBJECTINDEX"
+#if UWP_SINGLE_PASS_INSTANCED
+	"OBJECTINDEX",
+	"SV_InstanceID"
+#else // UWP_SINGLE_PASS_INSTANCED
+	"OBJECTINDEX"
+#endif // UWP_SINGLE_PASS_INSTANCED
 };
 
 void ShaderVariation::OnDeviceLost()

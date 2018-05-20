@@ -173,6 +173,9 @@ enum VertexElementSemantic
     SEM_BLENDWEIGHTS,
     SEM_BLENDINDICES,
     SEM_OBJECTINDEX,
+#if UWP_SINGLE_PASS_INSTANCED
+	SEM_INSTANCEINDEX,
+#endif // UWP_SINGLE_PASS_INSTANCED
     MAX_VERTEX_ELEMENT_SEMANTICS
 };
 
@@ -389,6 +392,9 @@ extern URHO3D_API const StringHash VSP_MODEL;
 extern URHO3D_API const StringHash VSP_VIEW;
 extern URHO3D_API const StringHash VSP_VIEWINV;
 extern URHO3D_API const StringHash VSP_VIEWPROJ;
+#if UWP_SINGLE_PASS_INSTANCED
+extern URHO3D_API const StringHash VSP_VIEWPROJ2;
+#endif // UWP_SINGLE_PASS_INSTANCED
 extern URHO3D_API const StringHash VSP_UOFFSET;
 extern URHO3D_API const StringHash VSP_VOFFSET;
 extern URHO3D_API const StringHash VSP_ZONE;

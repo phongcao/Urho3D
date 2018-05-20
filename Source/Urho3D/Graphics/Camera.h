@@ -101,6 +101,10 @@ public:
         Note that the custom projection is not serialized or replicated through the network.
      */
     void SetProjection(const Matrix4& projection);
+#if UWP_SINGLE_PASS_INSTANCED
+	void SetRightCameraNode(Node* rightCameraNode);
+	void SetRightProjection(const Matrix4& rightProjection);
+#endif // UWP_SINGLE_PASS_INSTANCED
 
     /// Return far clip distance. If a custom projection matrix is in use, is calculated from it instead of the value assigned with SetFarClip().
     float GetFarClip() const;
@@ -145,10 +149,16 @@ public:
     const Frustum& GetFrustum() const;
     /// Return projection matrix. It's in D3D convention with depth range 0 - 1.
     Matrix4 GetProjection() const;
+#if UWP_SINGLE_PASS_INSTANCED
+	Matrix4 GetRightProjection() const;
+#endif // UWP_SINGLE_PASS_INSTANCED
     /// Return projection matrix converted to API-specific format for use as a shader parameter.
     Matrix4 GetGPUProjection() const;
     /// Return view matrix.
     const Matrix3x4& GetView() const;
+#if UWP_SINGLE_PASS_INSTANCED
+	const Matrix3x4& GetRightView() const;
+#endif // UWP_SINGLE_PASS_INSTANCED
     /// Return frustum near and far sizes.
     void GetFrustumSize(Vector3& near, Vector3& far) const;
     /// Return half view size.
@@ -229,6 +239,11 @@ private:
     mutable Matrix3x4 view_;
     /// Cached projection matrix.
     mutable Matrix4 projection_;
+#if UWP_SINGLE_PASS_INSTANCED
+	mutable Node* rightCameraNode_;
+	mutable Matrix4 rightProjection_;
+	mutable Matrix3x4 rightView_;
+#endif // UWP_SINGLE_PASS_INSTANCED
     /// Cached world space frustum.
     mutable Frustum frustum_;
     /// View matrix dirty flag.

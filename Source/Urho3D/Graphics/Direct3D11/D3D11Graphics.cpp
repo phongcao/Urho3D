@@ -853,7 +853,16 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
         primitiveType_ = d3dPrimitiveType;
     }
-    impl_->deviceContext_->DrawIndexed(indexCount, indexStart, 0);
+
+#if UWP_HOLO
+#if UWP_SINGLE_PASS_INSTANCED
+	impl_->deviceContext_->DrawIndexedInstanced(indexCount, 2, indexStart, 0, 0);
+#else // UWP_SINGLE_PASS_INSTANCED
+	impl_->deviceContext_->DrawIndexed(indexCount, indexStart, 0);
+#endif // UWP_SINGLE_PASS_INSTANCED
+#else // UWP_HOLO
+	impl_->deviceContext_->DrawIndexed(indexCount, indexStart, 0);
+#endif // UWP_HOLO
 
     numPrimitives_ += primitiveCount;
     ++numBatches_;
@@ -2319,20 +2328,21 @@ bool Graphics::UpdateSwapChain(int width, int height)
     else
     {
 #if UWP_HOLO
-        D3D11_RENDER_TARGET_VIEW_DESC desc1;
-        memset(&desc1, 0, sizeof desc1);
-        desc1.Format = DXGI_FORMAT_UNKNOWN;// textureDesc.Format;
-        desc1.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-        desc1.Texture2DArray.ArraySize = 1;
-        desc1.Texture2DArray.FirstArraySlice = 0;
-        hr = impl_->device_->CreateRenderTargetView(backbufferTexture, &desc1, &impl_->defaultRenderTargetView_);
+#if UWP_SINGLE_PASS_INSTANCED
+		hr = impl_->device_->CreateRenderTargetView(backbufferTexture, 0, &impl_->defaultRenderTargetView_);
+#else // UWP_SINGLE_PASS_INSTANCED
+		D3D11_RENDER_TARGET_VIEW_DESC desc1;
+		memset(&desc1, 0, sizeof desc1);
+		desc1.Format = DXGI_FORMAT_UNKNOWN;// textureDesc.Format;
+		desc1.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+		desc1.Texture2DArray.ArraySize = 1;
+		desc1.Texture2DArray.FirstArraySlice = 0;
+		hr = impl_->device_->CreateRenderTargetView(backbufferTexture, &desc1, &impl_->defaultRenderTargetView_);
 
-        D3D11_RENDER_TARGET_VIEW_DESC desc2 = desc1;
-        desc2.Texture2DArray.FirstArraySlice = 1;
-
-#if !UWP_SINGLE_PASS_INSTANCED
-        hr = impl_->device_->CreateRenderTargetView(backbufferTexture, &desc2, &impl_->defaultStereoRenderTargetView_);
-#endif // !UWP_SINGLE_PASS_INSTANCED
+		D3D11_RENDER_TARGET_VIEW_DESC desc2 = desc1;
+		desc2.Texture2DArray.FirstArraySlice = 1;
+		hr = impl_->device_->CreateRenderTargetView(backbufferTexture, &desc2, &impl_->defaultStereoRenderTargetView_);
+#endif // UWP_SINGLE_PASS_INSTANCED
 #else // UWP_HOLO
         hr = impl_->device_->CreateRenderTargetView(backbufferTexture, 0, &impl_->defaultRenderTargetView_);
 #endif // UWP_HOLO
@@ -2348,19 +2358,47 @@ bool Graphics::UpdateSwapChain(int width, int height)
         }
     }
 
-    D3D11_TEXTURE2D_DESC depthDesc;
-    memset(&depthDesc, 0, sizeof depthDesc);
-    depthDesc.Width = (UINT)width;
-    depthDesc.Height = (UINT)height;
-    depthDesc.MipLevels = 1;
-    depthDesc.ArraySize = 1;
-    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthDesc.SampleDesc.Count = (UINT)multiSample_;
-    depthDesc.SampleDesc.Quality = impl_->GetMultiSampleQuality(depthDesc.Format, multiSample_);
-    depthDesc.Usage = D3D11_USAGE_DEFAULT;
-    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    depthDesc.CPUAccessFlags = 0;
-    depthDesc.MiscFlags = 0;
+#if UWP_HOLO
+#if UWP_SINGLE_PASS_INSTANCED
+	CD3D11_TEXTURE2D_DESC depthDesc(
+		DXGI_FORMAT_D16_UNORM,
+		static_cast<UINT>(width),
+		static_cast<UINT>(height),
+		2, // Create two textures when rendering in stereo.
+		1, // Use a single mipmap level.
+		D3D11_BIND_DEPTH_STENCIL
+	);
+#else // UWP_SINGLE_PASS_INSTANCED
+	D3D11_TEXTURE2D_DESC depthDesc;
+	memset(&depthDesc, 0, sizeof depthDesc);
+	depthDesc.Width = (UINT)width;
+	depthDesc.Height = (UINT)height;
+	depthDesc.MipLevels = 1;
+	depthDesc.ArraySize = 1;
+	depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthDesc.SampleDesc.Count = (UINT)multiSample_;
+	depthDesc.SampleDesc.Quality = impl_->GetMultiSampleQuality(depthDesc.Format, multiSample_);
+	depthDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthDesc.CPUAccessFlags = 0;
+	depthDesc.MiscFlags = 0;
+#endif // UWP_SINGLE_PASS_INSTANCED
+#else // UWP_HOLO
+	D3D11_TEXTURE2D_DESC depthDesc;
+	memset(&depthDesc, 0, sizeof depthDesc);
+	depthDesc.Width = (UINT)width;
+	depthDesc.Height = (UINT)height;
+	depthDesc.MipLevels = 1;
+	depthDesc.ArraySize = 1;
+	depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthDesc.SampleDesc.Count = (UINT)multiSample_;
+	depthDesc.SampleDesc.Quality = impl_->GetMultiSampleQuality(depthDesc.Format, multiSample_);
+	depthDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthDesc.CPUAccessFlags = 0;
+	depthDesc.MiscFlags = 0;
+#endif // UWP_HOLO
+
     hr = impl_->device_->CreateTexture2D(&depthDesc, nullptr, &impl_->defaultDepthTexture_);
 
     if (FAILED(hr))
