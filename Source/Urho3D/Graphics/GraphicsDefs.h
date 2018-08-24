@@ -173,6 +173,9 @@ enum VertexElementSemantic
     SEM_BLENDWEIGHTS,
     SEM_BLENDINDICES,
     SEM_OBJECTINDEX,
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+	SEM_INSTANCEINDEX,
+#endif
     MAX_VERTEX_ELEMENT_SEMANTICS
 };
 
@@ -389,6 +392,10 @@ extern URHO3D_API const StringHash VSP_MODEL;
 extern URHO3D_API const StringHash VSP_VIEW;
 extern URHO3D_API const StringHash VSP_VIEWINV;
 extern URHO3D_API const StringHash VSP_VIEWPROJ;
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+extern URHO3D_API const StringHash VSP_STEREOVIEWPROJLEFT;
+extern URHO3D_API const StringHash VSP_STEREOVIEWPROJRIGHT;
+#endif
 extern URHO3D_API const StringHash VSP_UOFFSET;
 extern URHO3D_API const StringHash VSP_VOFFSET;
 extern URHO3D_API const StringHash VSP_ZONE;

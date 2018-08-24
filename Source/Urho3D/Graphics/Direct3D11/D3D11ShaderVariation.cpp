@@ -48,7 +48,12 @@ const char* ShaderVariation::elementSemanticNames[] =
     "COLOR",
     "BLENDWEIGHT",
     "BLENDINDICES",
-    "OBJECTINDEX"
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+	"OBJECTINDEX",
+	"SV_InstanceID"
+#else
+	"OBJECTINDEX"
+#endif
 };
 
 void ShaderVariation::OnDeviceLost()

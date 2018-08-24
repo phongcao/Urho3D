@@ -52,6 +52,10 @@ extern URHO3D_API const StringHash VSP_MODEL("Model");
 extern URHO3D_API const StringHash VSP_VIEW("View");
 extern URHO3D_API const StringHash VSP_VIEWINV("ViewInv");
 extern URHO3D_API const StringHash VSP_VIEWPROJ("ViewProj");
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+extern URHO3D_API const StringHash VSP_STEREOVIEWPROJLEFT("StereoViewProjLeft");
+extern URHO3D_API const StringHash VSP_STEREOVIEWPROJRIGHT("StereoViewProjRight");
+#endif
 extern URHO3D_API const StringHash VSP_UOFFSET("UOffset");
 extern URHO3D_API const StringHash VSP_VOFFSET("VOffset");
 extern URHO3D_API const StringHash VSP_ZONE("Zone");

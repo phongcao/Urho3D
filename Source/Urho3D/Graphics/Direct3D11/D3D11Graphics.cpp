@@ -853,7 +853,12 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
         primitiveType_ = d3dPrimitiveType;
     }
-    impl_->deviceContext_->DrawIndexed(indexCount, indexStart, 0);
+
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+	impl_->deviceContext_->DrawIndexedInstanced(indexCount, 2, indexStart, 0, 0);
+#else
+	impl_->deviceContext_->DrawIndexed(indexCount, indexStart, 0);
+#endif
 
     numPrimitives_ += primitiveCount;
     ++numBatches_;
