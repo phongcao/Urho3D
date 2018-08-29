@@ -83,7 +83,9 @@ private:
     IDXGISwapChain* swapChain_;
     /// Default (backbuffer) rendertarget view.
     ID3D11RenderTargetView* defaultRenderTargetView_;
+#if defined(UWP_HOLO) && !defined(STEREO_INSTANCING)
     ID3D11RenderTargetView* defaultStereoRenderTargetView_;
+#endif
     /// Default depth-stencil texture.
     ID3D11Texture2D* defaultDepthTexture_;
     /// Default depth-stencil view.

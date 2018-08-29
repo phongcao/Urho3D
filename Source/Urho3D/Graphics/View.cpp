@@ -763,15 +763,27 @@ void View::SetCameraShaderParameters(Camera* camera)
     camera->GetFrustumSize(nearVector, farVector);
     graphics_->SetShaderParameter(VSP_FRUSTUMSIZE, farVector);
 
-    Matrix4 projection = camera->GetGPUProjection();
 #ifdef URHO3D_OPENGL
+	Matrix4 projection = camera->GetGPUProjection();
+
     // Add constant depth bias manually to the projection matrix due to glPolygonOffset() inconsistency
     float constantBias = 2.0f * graphics_->GetDepthConstantBias();
     projection.m22_ += projection.m32_ * constantBias;
     projection.m23_ += projection.m33_ * constantBias;
 #endif
 
-    graphics_->SetShaderParameter(VSP_VIEWPROJ, projection * camera->GetView());
+	Matrix4 projection = camera->GetGPUProjection();
+	graphics_->SetShaderParameter(VSP_VIEWPROJ, projection * camera->GetView());
+
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+	graphics_->SetShaderParameter(
+		VSP_STEREOVIEWPROJLEFT,
+		camera->GetStereoProjection(StereoEye::LEFT) * camera->GetStereoView(StereoEye::LEFT));
+
+	graphics_->SetShaderParameter(
+		VSP_STEREOVIEWPROJRIGHT,
+		camera->GetStereoProjection(StereoEye::RIGHT) * camera->GetStereoView(StereoEye::RIGHT));
+#endif
 
     // If in a scene pass and the command defines shader parameters, set them now
     if (passCommand_)

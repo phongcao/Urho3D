@@ -276,6 +276,54 @@ void Camera::SetProjection(const Matrix4& projection)
     MarkNetworkUpdate();
 }
 
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+void Camera::SetStereoProjection(StereoEye eye, const Matrix4& projection)
+{
+	// RH to LH
+	Matrix4 projectionLH = projection.Transpose();
+	projectionLH.m02_ *= -1;
+	projectionLH.m12_ *= -1;
+	projectionLH.m22_ *= -1;
+	projectionLH.m32_ *= -1;
+
+	if (eye == StereoEye::LEFT)
+	{
+		projectionLeft_ = projectionLH;
+	}
+	else
+	{
+		projectionRight_ = projectionLH;
+	}
+
+	SetProjection(projectionLH);
+}
+
+void Camera::SetStereoView(StereoEye eye, const Matrix4& view)
+{
+	// Converts RH to LH.
+	Matrix4 viewt = view.Inverse().Transpose();
+	Vector3 position = Vector3(viewt.m03_, viewt.m13_, -viewt.m23_);
+	Quaternion rotation = viewt.Rotation();
+	rotation.x_ *= -1;
+	rotation.y_ *= -1;
+
+	if (eye == StereoEye::LEFT)
+	{
+		eyePosLeft_ = position;
+		eyeRotLeft_ = rotation;
+
+		// Uses world position and rotation of left eye.
+		GetNode()->SetWorldPosition(eyePosLeft_);
+		GetNode()->SetWorldRotation(eyeRotLeft_);
+	}
+	else
+	{
+		eyePosRight_ = position;
+		eyeRotRight_ = rotation;
+	}
+}
+#endif
+
 float Camera::GetNearClip() const
 {
     if (projectionDirty_)
@@ -454,6 +502,46 @@ Matrix4 Camera::GetProjection() const
         UpdateProjection();
 
     return flipVertical_ ? flipMatrix * projection_ : projection_;
+}
+
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+Matrix4 Camera::GetStereoProjection(StereoEye eye) const
+{
+	return eye == StereoEye::LEFT ? projectionLeft_ : projectionRight_;
+}
+
+Matrix3x4 Camera::GetStereoView(StereoEye eye) const
+{
+	Matrix3x4 worldTransform = (eye == StereoEye::LEFT) ? 
+		Matrix3x4(eyePosLeft_, eyeRotLeft_, 1.0f) :
+		Matrix3x4(eyePosRight_, eyeRotRight_, 1.0f);
+
+	if (useReflection_)
+	{
+		worldTransform = reflectionMatrix_ * worldTransform;
+	}
+
+	return worldTransform.Inverse();
+}
+
+Vector3 Camera::GetStereoWorldPosition(StereoEye eye) const
+{
+	return eye == StereoEye::LEFT ? eyePosLeft_ : eyePosRight_;
+}
+
+Quaternion Camera::GetStereoWorldRotation(StereoEye eye) const
+{
+	return eye == StereoEye::LEFT ? eyeRotLeft_ : eyeRotRight_;
+}
+#endif
+
+float Camera::GetDistanceBetweenEyes() const
+{
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+	return (float)std::sqrt((eyeRotRight_.x_ - eyePosLeft_.x_) * (eyeRotRight_.x_ - eyePosLeft_.x_) + (eyeRotRight_.y_ - eyePosLeft_.y_) * (eyeRotRight_.y_ - eyePosLeft_.y_) + (eyeRotRight_.z_ - eyePosLeft_.z_) * (eyeRotRight_.z_ - eyePosLeft_.z_));
+#else
+	return 0;
+#endif
 }
 
 Matrix4 Camera::GetGPUProjection() const

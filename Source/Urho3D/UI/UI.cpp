@@ -1011,13 +1011,21 @@ void UI::Render(VertexBuffer* buffer, const PODVector<UIBatch>& batches, unsigne
     graphics_->SetStencilTest(false);
     graphics_->SetVertexBuffer(buffer);
 
-    ShaderVariation* noTextureVS = graphics_->GetShader(VS, "Basic", "VERTEXCOLOR");
-    ShaderVariation* diffTextureVS = graphics_->GetShader(VS, "Basic", "DIFFMAP VERTEXCOLOR");
-    ShaderVariation* noTexturePS = graphics_->GetShader(PS, "Basic", "VERTEXCOLOR");
-    ShaderVariation* diffTexturePS = graphics_->GetShader(PS, "Basic", "DIFFMAP VERTEXCOLOR");
-    ShaderVariation* diffMaskTexturePS = graphics_->GetShader(PS, "Basic", "DIFFMAP ALPHAMASK VERTEXCOLOR");
-    ShaderVariation* alphaTexturePS = graphics_->GetShader(PS, "Basic", "ALPHAMAP VERTEXCOLOR");
-
+#ifndef STEREO_INSTANCING
+	ShaderVariation* noTextureVS = graphics_->GetShader(VS, "Basic", "VERTEXCOLOR");
+	ShaderVariation* diffTextureVS = graphics_->GetShader(VS, "Basic", "DIFFMAP VERTEXCOLOR");
+	ShaderVariation* noTexturePS = graphics_->GetShader(PS, "Basic", "VERTEXCOLOR");
+	ShaderVariation* diffTexturePS = graphics_->GetShader(PS, "Basic", "DIFFMAP VERTEXCOLOR");
+	ShaderVariation* diffMaskTexturePS = graphics_->GetShader(PS, "Basic", "DIFFMAP ALPHAMASK VERTEXCOLOR");
+	ShaderVariation* alphaTexturePS = graphics_->GetShader(PS, "Basic", "ALPHAMAP VERTEXCOLOR");
+#else
+	ShaderVariation* noTextureVS = graphics_->GetShader(VS, "Basic", "VERTEXCOLOR STEREO_INSTANCING");
+	ShaderVariation* diffTextureVS = graphics_->GetShader(VS, "Basic", "DIFFMAP VERTEXCOLOR STEREO_INSTANCING");
+	ShaderVariation* noTexturePS = graphics_->GetShader(PS, "Basic", "VERTEXCOLOR STEREO_INSTANCING");
+	ShaderVariation* diffTexturePS = graphics_->GetShader(PS, "Basic", "DIFFMAP VERTEXCOLOR STEREO_INSTANCING");
+	ShaderVariation* diffMaskTexturePS = graphics_->GetShader(PS, "Basic", "DIFFMAP ALPHAMASK VERTEXCOLOR STEREO_INSTANCING");
+	ShaderVariation* alphaTexturePS = graphics_->GetShader(PS, "Basic", "ALPHAMAP VERTEXCOLOR STEREO_INSTANCING");
+#endif
 
     for (unsigned i = batchStart; i < batchEnd; ++i)
     {
@@ -1049,8 +1057,14 @@ void UI::Render(VertexBuffer* buffer, const PODVector<UIBatch>& batches, unsigne
         graphics_->SetShaders(vs, ps);
         if (graphics_->NeedParameterUpdate(SP_OBJECT, this))
             graphics_->SetShaderParameter(VSP_MODEL, Matrix3x4::IDENTITY);
-        if (graphics_->NeedParameterUpdate(SP_CAMERA, this))
-            graphics_->SetShaderParameter(VSP_VIEWPROJ, projection);
+		if (graphics_->NeedParameterUpdate(SP_CAMERA, this))
+		{
+			graphics_->SetShaderParameter(VSP_VIEWPROJ, projection);
+#ifdef STEREO_INSTANCING
+			graphics_->SetShaderParameter(VSP_STEREOVIEWPROJLEFT, projection);
+			graphics_->SetShaderParameter(VSP_STEREOVIEWPROJRIGHT, projection);
+#endif
+		}
         if (graphics_->NeedParameterUpdate(SP_MATERIAL, this))
             graphics_->SetShaderParameter(PSP_MATDIFFCOLOR, Color(1.0f, 1.0f, 1.0f, 1.0f));
 

@@ -102,6 +102,14 @@ public:
      */
     void SetProjection(const Matrix4& projection);
 
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+	/// Set stereo projection matrix
+	void SetStereoProjection(StereoEye eye, const Matrix4& projection);
+
+	/// Set stereo view matrix
+	void SetStereoView(StereoEye eye, const Matrix4& view);
+#endif
+
     /// Return far clip distance. If a custom projection matrix is in use, is calculated from it instead of the value assigned with SetFarClip().
     float GetFarClip() const;
 
@@ -145,6 +153,21 @@ public:
     const Frustum& GetFrustum() const;
     /// Return projection matrix. It's in D3D convention with depth range 0 - 1.
     Matrix4 GetProjection() const;
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+	/// Return stereo projection matrix.
+	Matrix4 GetStereoProjection(StereoEye eye) const;
+
+	/// Return stereo view matrix.
+	Matrix3x4 GetStereoView(StereoEye eye) const;
+
+	// Return world position for the specified eye.
+	Vector3 GetStereoWorldPosition(StereoEye eye) const;
+
+	// Return world rotation for the specified eye.
+	Quaternion GetStereoWorldRotation(StereoEye eye) const;
+#endif
+	// Return the distance between both eyes.
+	float GetDistanceBetweenEyes() const;
     /// Return projection matrix converted to API-specific format for use as a shader parameter.
     Matrix4 GetGPUProjection() const;
     /// Return view matrix.
@@ -229,6 +252,16 @@ private:
     mutable Matrix3x4 view_;
     /// Cached projection matrix.
     mutable Matrix4 projection_;
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+	/// Cached stereo projection matrices.
+	mutable Matrix4 projectionLeft_;
+	mutable Matrix4 projectionRight_;
+	/// Cached world rotation and position of each eye.
+	mutable Vector3 eyePosLeft_;
+	mutable Vector3 eyePosRight_;
+	mutable Quaternion eyeRotLeft_;
+	mutable Quaternion eyeRotRight_;
+#endif
     /// Cached world space frustum.
     mutable Frustum frustum_;
     /// View matrix dirty flag.

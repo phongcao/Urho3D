@@ -280,7 +280,7 @@ Graphics::~Graphics()
     impl_->rasterizerStates_.Clear();
 
     URHO3D_SAFE_RELEASE(impl_->defaultRenderTargetView_);
-#if UWP_HOLO
+#if UWP_HOLO && !STEREO_INSTANCING
     URHO3D_SAFE_RELEASE(impl_->defaultStereoRenderTargetView_);
 #endif
     URHO3D_SAFE_RELEASE(impl_->defaultDepthStencilView_);
@@ -828,7 +828,12 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
         primitiveType_ = d3dPrimitiveType;
     }
-    impl_->deviceContext_->Draw(vertexCount, vertexStart);
+
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+	impl_->deviceContext_->DrawInstanced(vertexCount, 2, vertexStart, 0);
+#else
+	impl_->deviceContext_->Draw(vertexCount, vertexStart);
+#endif
 
     numPrimitives_ += primitiveCount;
     ++numBatches_;
@@ -883,7 +888,12 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
         primitiveType_ = d3dPrimitiveType;
     }
-    impl_->deviceContext_->DrawIndexed(indexCount, indexStart, baseVertexIndex);
+
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+	impl_->deviceContext_->DrawIndexedInstanced(indexCount, 2, indexStart, baseVertexIndex, 0);
+#else
+	impl_->deviceContext_->DrawIndexed(indexCount, indexStart, baseVertexIndex);
+#endif
 
     numPrimitives_ += primitiveCount;
     ++numBatches_;
@@ -2324,6 +2334,7 @@ bool Graphics::UpdateSwapChain(int width, int height)
     else
     {
 #if UWP_HOLO
+#ifndef STEREO_INSTANCING
         D3D11_RENDER_TARGET_VIEW_DESC desc1;
         memset(&desc1, 0, sizeof desc1);
         desc1.Format = DXGI_FORMAT_UNKNOWN;// textureDesc.Format;
@@ -2337,33 +2348,49 @@ bool Graphics::UpdateSwapChain(int width, int height)
 
         hr = impl_->device_->CreateRenderTargetView(backbufferTexture, &desc2, &impl_->defaultStereoRenderTargetView_);
 #else
-        hr = impl_->device_->CreateRenderTargetView(backbufferTexture, 0, &impl_->defaultRenderTargetView_);
+		hr = impl_->device_->CreateRenderTargetView(backbufferTexture, 0, &impl_->defaultRenderTargetView_);
 #endif
+#else // UWP_HOLO
+        hr = impl_->device_->CreateRenderTargetView(backbufferTexture, 0, &impl_->defaultRenderTargetView_);
+#endif // UWP_HOLO
         backbufferTexture->Release();
         if (FAILED(hr))
         {
             URHO3D_SAFE_RELEASE(impl_->defaultRenderTargetView_);
+#if UWP_HOLO && !STEREO_INSTANCING
             URHO3D_SAFE_RELEASE(impl_->defaultStereoRenderTargetView_);
+#endif
             URHO3D_LOGD3DERROR("Failed to create backbuffer rendertarget view", hr);
             success = false;
         }
     }
 
-    D3D11_TEXTURE2D_DESC depthDesc;
-    memset(&depthDesc, 0, sizeof depthDesc);
-    depthDesc.Width = (UINT)width;
-    depthDesc.Height = (UINT)height;
-    depthDesc.MipLevels = 1;
-    depthDesc.ArraySize = 1;
-    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthDesc.SampleDesc.Count = (UINT)multiSample_;
-    depthDesc.SampleDesc.Quality = impl_->GetMultiSampleQuality(depthDesc.Format, multiSample_);
-    depthDesc.Usage = D3D11_USAGE_DEFAULT;
-    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    depthDesc.CPUAccessFlags = 0;
-    depthDesc.MiscFlags = 0;
-    hr = impl_->device_->CreateTexture2D(&depthDesc, nullptr, &impl_->defaultDepthTexture_);
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+	CD3D11_TEXTURE2D_DESC depthDesc(
+		DXGI_FORMAT_D16_UNORM,
+		static_cast<UINT>(width),
+		static_cast<UINT>(height),
+		2, // Create two textures when rendering in stereo.
+		1, // Use a single mipmap level.
+		D3D11_BIND_DEPTH_STENCIL
+	);
+#else
+	D3D11_TEXTURE2D_DESC depthDesc;
+	memset(&depthDesc, 0, sizeof depthDesc);
+	depthDesc.Width = (UINT)width;
+	depthDesc.Height = (UINT)height;
+	depthDesc.MipLevels = 1;
+	depthDesc.ArraySize = 1;
+	depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthDesc.SampleDesc.Count = (UINT)multiSample_;
+	depthDesc.SampleDesc.Quality = impl_->GetMultiSampleQuality(depthDesc.Format, multiSample_);
+	depthDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthDesc.CPUAccessFlags = 0;
+	depthDesc.MiscFlags = 0;
+#endif
 
+    hr = impl_->device_->CreateTexture2D(&depthDesc, nullptr, &impl_->defaultDepthTexture_);
     if (FAILED(hr))
     {
         URHO3D_SAFE_RELEASE(impl_->defaultDepthTexture_);
@@ -2502,9 +2529,12 @@ void Graphics::PrepareDraw()
         // backbuffer rendering with a custom depth stencil
         if (!renderTargets_[0] &&
             (!depthStencil_ || (depthStencil_ && depthStencil_->GetWidth() == width_ && depthStencil_->GetHeight() == height_)))
+#if UWP_HOLO && !STEREO_INSTANCING
             impl_->renderTargetViews_[0] = stereoRendering_ ? impl_->defaultStereoRenderTargetView_ : impl_->defaultRenderTargetView_;
+#else
+			impl_->renderTargetViews_[0] = impl_->defaultRenderTargetView_;
+#endif
 
-        
         impl_->deviceContext_->OMSetRenderTargets(MAX_RENDERTARGETS, &impl_->renderTargetViews_[0], impl_->depthStencilView_);
         if (!stereoRendering_)
             impl_->renderTargetsDirty_ = false;

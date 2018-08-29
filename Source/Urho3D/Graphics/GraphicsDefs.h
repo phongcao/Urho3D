@@ -372,6 +372,14 @@ enum ShadowQuality
     SHADOWQUALITY_BLUR_VSM
 };
 
+#if defined(UWP_HOLO) && defined(STEREO_INSTANCING)
+enum StereoEye
+{
+	LEFT = 0,
+	RIGHT
+};
+#endif
+
 // Inbuilt shader parameters.
 extern URHO3D_API const StringHash VSP_AMBIENTSTARTCOLOR;
 extern URHO3D_API const StringHash VSP_AMBIENTENDCOLOR;
